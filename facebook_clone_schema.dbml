@@ -1,0 +1,176 @@
+// Facebook Clone - Database Schema
+// Generated for dbdiagram.io
+// Paste this code at: https://dbdiagram.io/d
+
+Table auth_user {
+  id integer [primary key, increment]
+  username varchar(150) [unique, not null]
+  email varchar(254)
+  first_name varchar(150)
+  last_name varchar(150)
+  password varchar(128) [not null]
+  is_active boolean [default: true]
+  is_staff boolean [default: false]
+  is_superuser boolean [default: false]
+  date_joined datetime [not null]
+  last_login datetime
+}
+
+Table accounts_profile {
+  id integer [primary key, increment]
+  user_id integer [unique, not null, ref: - auth_user.id]
+  bio text
+  avatar varchar(100) [default: 'default.jpg']
+  location varchar(100)
+  birth_date date
+  website varchar(200)
+  email_verified boolean [default: false]
+  email_verification_token varchar(100)
+  created_at datetime [not null]
+  updated_at datetime [not null]
+}
+
+Table user_settings_usersettings {
+  id integer [primary key, increment]
+  user_id integer [unique, not null, ref: - auth_user.id]
+  profile_visibility varchar(10) [default: 'public']
+  default_post_privacy varchar(10) [default: 'public']
+  allow_friend_requests boolean [default: true]
+  show_email boolean [default: false]
+  show_birth_date boolean [default: true]
+  email_notifications boolean [default: true]
+  notify_friend_requests boolean [default: true]
+  two_factor_enabled boolean [default: false]
+  created_at datetime [not null]
+  updated_at datetime [not null]
+}
+
+Table posts_post {
+  id integer [primary key, increment]
+  author_id integer [not null, ref: > auth_user.id]
+  content text [not null]
+  image varchar(100)
+  privacy varchar(10) [default: 'public']
+  likes_count integer [default: 0]
+  comments_count integer [default: 0]
+  created_at datetime [not null]
+  updated_at datetime [not null]
+}
+
+Table posts_comment {
+  id integer [primary key, increment]
+  post_id integer [not null, ref: > posts_post.id]
+  author_id integer [not null, ref: > auth_user.id]
+  content text [not null]
+  created_at datetime [not null]
+  updated_at datetime [not null]
+}
+
+Table posts_like {
+  id integer [primary key, increment]
+  user_id integer [not null, ref: > auth_user.id]
+  post_id integer [not null, ref: > posts_post.id]
+  created_at datetime [not null]
+  
+  indexes {
+    (user_id, post_id) [unique, name: "unique_user_post_like"]
+  }
+}
+
+Table core_friendship {
+  id integer [primary key, increment]
+  from_user_id integer [not null, ref: > auth_user.id]
+  to_user_id integer [not null, ref: > auth_user.id]
+  status varchar(10) [default: 'pending']
+  created_at datetime [not null]
+  updated_at datetime [not null]
+  
+  indexes {
+    (from_user_id, to_user_id) [unique, name: "unique_friendship"]
+  }
+}
+
+Table notifications_notification {
+  id integer [primary key, increment]
+  recipient_id integer [not null, ref: > auth_user.id]
+  sender_id integer [ref: > auth_user.id]
+  notification_type varchar(20) [not null]
+  message varchar(255) [not null]
+  content_type_id integer
+  object_id integer
+  is_read boolean [default: false]
+  is_sent_via_email boolean [default: false]
+  created_at datetime [not null]
+  read_at datetime
+}
+
+Table notifications_emaillog {
+  id integer [primary key, increment]
+  recipient_id integer [not null, ref: > auth_user.id]
+  email_type varchar(20) [not null]
+  subject varchar(255) [not null]
+  is_sent boolean [default: false]
+  sent_at datetime
+  error_message text
+  created_at datetime [not null]
+}
+
+// Privacy choices enum reference
+Enum privacy_choices {
+  public
+  friends
+  private
+}
+
+// Friendship status enum reference
+Enum friendship_status {
+  pending
+  accepted
+  declined
+  blocked
+}
+
+// Notification types enum reference
+Enum notification_types {
+  like
+  comment
+  friend_request
+  friend_accept
+  mention
+  welcome
+}
+
+// Email types enum reference
+Enum email_types {
+  welcome
+  password_reset
+  email_verification
+  notification
+}
+
+// Notes about key relationships and constraints
+Note: '''
+# Facebook Clone Database Schema
+
+## Key Features:
+- User authentication with extended profiles
+- Posts with privacy controls (public/friends/private)
+- Simple commenting system (no nested replies)
+- Like/unlike functionality with duplicate prevention
+- Friend request system with status tracking
+- Basic notification system
+- Email logging for sent emails
+- User privacy and notification settings
+
+## Business Rules:
+1. Each user has exactly one profile and one settings record
+2. Users can only like a post once (unique constraint)
+3. Friend requests are unique per user pair
+4. Posts have three privacy levels: public, friends, private
+5. Comments are single-level only (no replies)
+6. Notifications can be linked to any content type via generic foreign key
+
+## Auto-created Records:
+- Profile and UserSettings are automatically created when a new User is registered
+- Like/comment counts are automatically updated via model methods
+'''

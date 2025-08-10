@@ -1,0 +1,3 @@
+# Default profile picture placeholder
+# In production, you would place an actual default.jpg image file here
+# For now, this serves as a placeholder to prevent errors

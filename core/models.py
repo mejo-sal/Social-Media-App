@@ -1,3 +1,111 @@
 from django.db import models
+from django.contrib.auth.models import User
+from django.utils import timezone
 
-# Create your models here.
+
+class Friendship(models.Model):
+    """
+    Model for managing friendships between users
+    """
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('accepted', 'Accepted'),
+        ('declined', 'Declined'),
+        ('blocked', 'Blocked'),
+    ]
+    
+    # The user who sent the friend request
+    from_user = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='sent_friend_requests'
+    )
+    
+    # The user who received the friend request
+    to_user = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        related_name='received_friend_requests'
+    )
+    
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(default=timezone.now)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        # Ensure no duplicate friend requests
+        unique_together = ('from_user', 'to_user')
+        
+    def __str__(self):
+        return f"{self.from_user.username} -> {self.to_user.username} ({self.status})"
+    
+    @classmethod
+    def are_friends(cls, user1, user2):
+        """Check if two users are friends"""
+        return cls.objects.filter(
+            models.Q(from_user=user1, to_user=user2, status='accepted') |
+            models.Q(from_user=user2, to_user=user1, status='accepted')
+        ).exists()
+    
+    @classmethod
+    def get_friends(cls, user):
+        """Get all friends of a user"""
+        friend_relationships = cls.objects.filter(
+            models.Q(from_user=user, status='accepted') |
+            models.Q(to_user=user, status='accepted')
+        )
+        
+        friends = []
+        for relationship in friend_relationships:
+            if relationship.from_user == user:
+                friends.append(relationship.to_user)
+            else:
+                friends.append(relationship.from_user)
+        
+        return friends
+    
+    @classmethod
+    def send_friend_request(cls, from_user, to_user):
+        """Send a friend request"""
+        if from_user == to_user:
+            return None, "You cannot send a friend request to yourself"
+        
+        if cls.are_friends(from_user, to_user):
+            return None, "You are already friends"
+        
+        # Check if request already exists
+        existing = cls.objects.filter(
+            from_user=from_user, 
+            to_user=to_user
+        ).first()
+        
+        if existing:
+            if existing.status == 'pending':
+                return None, "Friend request already sent"
+            elif existing.status == 'declined':
+                existing.status = 'pending'
+                existing.save()
+                return existing, "Friend request sent"
+        
+        # Create new friend request
+        friendship = cls.objects.create(
+            from_user=from_user,
+            to_user=to_user,
+            status='pending'
+        )
+        return friendship, "Friend request sent"
+    
+    def accept(self):
+        """Accept the friend request"""
+        self.status = 'accepted'
+        self.save()
+    
+    def decline(self):
+        """Decline the friend request"""
+        self.status = 'declined'
+        self.save()
+    
+    def block(self):
+        """Block the user"""
+        self.status = 'blocked'
+        self.save()
