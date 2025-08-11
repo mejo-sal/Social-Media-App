@@ -31,6 +31,7 @@ urlpatterns = [
     path('accounts/', include('accounts.urls')),
     path('', home_redirect, name='home'),
     path('posts/', include('posts.urls', namespace='posts')),
+    path('user_settings/', include('user_settings.urls', namespace='user_settings')),
 ]
 
 # Serve media files in development
