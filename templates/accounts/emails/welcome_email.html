@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Welcome to SocialHub!</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background: #007bff; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; background: #f8f9fa; }
+        .footer { padding: 20px; text-align: center; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎉 Welcome to {{ site_name }}!</h1>
+        </div>
+        <div class="content">
+            <h2>Hello {{ user.first_name|default:user.username }}!</h2>
+            <p>Welcome to SocialHub, the place where friends connect and share their moments!</p>
+            
+            <p>Your account has been successfully created with the following details:</p>
+            <ul>
+                <li><strong>Username:</strong> {{ user.username }}</li>
+                <li><strong>Email:</strong> {{ user.email }}</li>
+                <li><strong>Name:</strong> {{ user.first_name }} {{ user.last_name }}</li>
+            </ul>
+            
+            <p>You can now:</p>
+            <ul>
+                <li>📝 Create and share posts</li>
+                <li>👥 Connect with friends</li>
+                <li>💬 Comment on posts</li>
+                <li>❤️ Like content you enjoy</li>
+                <li>⚙️ Customize your privacy settings</li>
+            </ul>
+            
+            <p>Start by completing your profile and connecting with friends!</p>
+        </div>
+        <div class="footer">
+            <p>Thanks for joining SocialHub!</p>
+            <p><small>This is an automated message. Please do not reply to this email.</small></p>
+        </div>
+    </div>
+</body>
+</html>

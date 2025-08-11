@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ profile_user.first_name }} {{ profile_user.last_name }} - SocialHub{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body text-center">
+                <img src="{{ profile.avatar.url }}" alt="Profile Picture" class="rounded-circle mb-3" width="150" height="150" style="object-fit: cover;">
+                <h4>{{ profile_user.first_name }} {{ profile_user.last_name }}</h4>
+                <p class="text-muted">@{{ profile_user.username }}</p>
+                {% if profile.bio %}
+                    <p>{{ profile.bio }}</p>
+                {% endif %}
+                {% if is_own_profile %}
+                    <a href="{% url 'profile_edit' %}" class="btn btn-primary">
+                        <i class="fas fa-edit me-1"></i>Edit Profile
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle me-2"></i>Profile Information</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-2">
+                    <div class="col-sm-3"><strong>Email:</strong></div>
+                    <div class="col-sm-9">{{ profile_user.email|default:"Not provided" }}</div>
+                </div>
+                {% if profile.location %}
+                <div class="row mb-2">
+                    <div class="col-sm-3"><strong>Location:</strong></div>
+                    <div class="col-sm-9">{{ profile.location }}</div>
+                </div>
+                {% endif %}
+                {% if profile.website %}
+                <div class="row mb-2">
+                    <div class="col-sm-3"><strong>Website:</strong></div>
+                    <div class="col-sm-9"><a href="{{ profile.website }}" target="_blank">{{ profile.website }}</a></div>
+                </div>
+                {% endif %}
+                <div class="row mb-2">
+                    <div class="col-sm-3"><strong>Joined:</strong></div>
+                    <div class="col-sm-9">{{ profile.created_at|date:"F d, Y" }}</div>
+                </div>
+            </div>
+        </div>
+        
+        {% if is_own_profile %}
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5><i class="fas fa-bell me-2"></i>Recent Notifications</h5>
+            </div>
+            <div class="card-body">
+                {% if user.notifications.all %}
+                    {% for notification in user.notifications.all|slice:":5" %}
+                    <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                        <div>
+                            <i class="fas fa-bell text-primary me-2"></i>
+                            {{ notification.message }}
+                        </div>
+                        <small class="text-muted">{{ notification.created_at|timesince }} ago</small>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted">No notifications yet.</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
