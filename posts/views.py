@@ -1,7 +1,7 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
-from .models import Post, Comment
-from .forms import PostForm, CommentForm
+from .models import Post, Comment, Like
+from .forms import PostForm ,CommentForm
 
 @login_required
 def post_list(request):
@@ -35,11 +35,13 @@ def post_create(request):
 @login_required
 def like_post(request, post_id):
     post = get_object_or_404(Post, id=post_id)
-    if request.user in post.likes.all():
-        post.likes.remove(request.user)
+    existing_like = Like.objects.filter(post=post, user=request.user).first()
+    if existing_like:
+        existing_like.delete()
     else:
-        post.likes.add(request.user)
+        Like.objects.create(post=post, user=request.user)
     return redirect('posts:post_detail', post_id=post.id)
+
 
 @login_required
 def add_comment(request, post_id):
