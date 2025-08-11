@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>Home Feed</h2>
+
+{% for post in posts %}
+<div>
+    <p><strong>{{ post.author.username }}</strong></p>
+    <p>{{ post.content }}</p>
+    {% if post.image %}
+        <img src="{{ post.image.url }}" style="max-width:300px;">
+    {% endif %}
+    <p>{{ post.likes_count }} Likes | {{ post.comments_count }} Comments</p>
+
+    <form action="{% url 'like_post' post.id %}" method="post">
+        {% csrf_token %}
+        <button type="submit">
+            {% if user in post.likes.all %}
+                Unlike
+            {% else %}
+                Like
+            {% endif %}
+        </button>
+    </form>
+
+    <a href="{% url 'post_detail' post.id %}">View</a>
+</div>
+<hr>
+{% endfor %}
+
+{% if posts %}
+    <p>End of feed.</p>
+{% else %}
+    <p>No posts available.</p>
+{% endif %}       
+
+{% endblock %}

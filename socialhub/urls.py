@@ -30,6 +30,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls')),
     path('', home_redirect, name='home'),
+    path('posts/', include('posts.urls', namespace='posts')),
 ]
 
 # Serve media files in development
