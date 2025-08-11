@@ -23,12 +23,13 @@ from django.shortcuts import redirect
 def home_redirect(request):
     """Temporary redirect to login page"""
     if request.user.is_authenticated:
-        return redirect('posts:home')  # We'll create this later
+        return redirect('posts:home')
     return redirect('login')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls')),
+    path('posts/', include('posts.urls')),
     path('', home_redirect, name='home'),
 ]
 
