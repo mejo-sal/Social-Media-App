@@ -8,13 +8,10 @@ from .models import UserSettings
 def create_user_settings(sender, instance, created, **kwargs):
     """Create UserSettings for new users"""
     if created:
-        UserSettings.objects.create(user=instance)
+        UserSettings.objects.get_or_create(user=instance)
 
 
 @receiver(post_save, sender=User)
 def save_user_settings(sender, instance, **kwargs):
-    """Save UserSettings when user is saved"""
-    if hasattr(instance, 'settings'):
-        instance.settings.save()
-    else:
-        UserSettings.objects.create(user=instance)
+    """Ensure UserSettings exist when user is saved"""
+    UserSettings.objects.get_or_create(user=instance)

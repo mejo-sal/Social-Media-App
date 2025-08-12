@@ -1,0 +1,144 @@
+{% extends 'base.html' %}
+
+{% block title %}Search Users - SocialHub{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <!-- Search Header -->
+        <div class="card mb-4">
+            <div class="card-body text-center">
+                <h2 class="card-title mb-3">
+                    <i class="fas fa-search text-primary me-2"></i>Find Friends
+                </h2>
+                <p class="text-muted">Search for people by their username or name</p>
+            </div>
+        </div>
+
+        <!-- Search Form -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <form method="get" class="d-flex">
+                    <input 
+                        type="text" 
+                        name="q" 
+                        class="form-control me-2" 
+                        placeholder="Search by username, first name, or last name..." 
+                        value="{{ query }}"
+                        autofocus
+                    >
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Search Results -->
+        {% if query %}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-users me-2"></i>Search Results for "{{ query }}"
+                        {% if users %}
+                            <span class="badge bg-primary">{{ users|length }}</span>
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if users %}
+                        <div class="row">
+                            {% for user in users %}
+                                <div class="col-md-6 mb-3">
+                                    <div class="card h-100">
+                                        <div class="card-body">
+                                            <div class="d-flex align-items-center">
+                                                <!-- User Avatar -->
+                                                <div class="me-3">
+                                                    {% if user.profile.avatar %}
+                                                        <img src="{{ user.profile.avatar.url }}" 
+                                                             alt="Profile" 
+                                                             class="rounded-circle" 
+                                                             width="50" height="50" 
+                                                             style="object-fit: cover;">
+                                                    {% else %}
+                                                        <div class="rounded-circle bg-secondary d-flex align-items-center justify-content-center" 
+                                                             style="width: 50px; height: 50px;">
+                                                            <i class="fas fa-user text-white"></i>
+                                                        </div>
+                                                    {% endif %}
+                                                </div>
+                                                
+                                                <!-- User Info -->
+                                                <div class="flex-grow-1">
+                                                    <h6 class="mb-1">
+                                                        <a href="{% url 'profile_detail' user.username %}" 
+                                                           class="text-decoration-none">
+                                                            {{ user.first_name }} {{ user.last_name }}
+                                                        </a>
+                                                    </h6>
+                                                    <p class="text-muted mb-2 small">@{{ user.username }}</p>
+                                                    
+                                                    <!-- Friendship Status & Actions -->
+                                                    {% if user.friendship_status == 'friends' %}
+                                                        <span class="badge bg-success">
+                                                            <i class="fas fa-check me-1"></i>Friends
+                                                        </span>
+                                                    {% elif user.friendship_status == 'request_sent' %}
+                                                        <span class="badge bg-warning">
+                                                            <i class="fas fa-clock me-1"></i>Request Sent
+                                                        </span>
+                                                    {% elif user.friendship_status == 'request_received' %}
+                                                        <span class="badge bg-info">
+                                                            <i class="fas fa-envelope me-1"></i>Request Received
+                                                        </span>
+                                                    {% elif user.friendship_status == 'none' %}
+                                                        <form method="post" action="{% url 'send_friend_request' user.id %}" class="d-inline">
+                                                            {% csrf_token %}
+                                                            <button type="submit" class="btn btn-primary btn-sm">
+                                                                <i class="fas fa-user-plus me-1"></i>Add Friend
+                                                            </button>
+                                                        </form>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            
+                                            {% if user.profile.bio %}
+                                                <div class="mt-2">
+                                                    <small class="text-muted">{{ user.profile.bio|truncatewords:15 }}</small>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-4">
+                            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">No users found</h5>
+                            <p class="text-muted">Try searching with a different term.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% else %}
+            <!-- No search query -->
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">Search for Friends</h5>
+                    <p class="text-muted">Enter a username or name in the search box above to find people.</p>
+                </div>
+            </div>
+        {% endif %}
+        
+        <!-- Back to Home -->
+        <div class="text-center mt-4">
+            <a href="{% url 'posts:home' %}" class="btn btn-secondary">
+                <i class="fas fa-home me-2"></i>Back to Home
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

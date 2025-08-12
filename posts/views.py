@@ -15,6 +15,12 @@ def home_view(request):
     # Get user's friends
     friends = Friendship.get_friends(user)
     
+    # Get pending friend requests (received)
+    friend_requests = Friendship.objects.filter(
+        to_user=user,
+        status='pending'
+    ).order_by('-created_at')
+    
     # Get recent posts (we'll add posts functionality later)
     recent_posts = Post.objects.filter(privacy='public').order_by('-created_at')[:10]
     
@@ -24,9 +30,11 @@ def home_view(request):
     context = {
         'user': user,
         'friends': friends,
+        'friend_requests': friend_requests,
         'recent_posts': recent_posts,
         'notifications': notifications,
         'friends_count': len(friends),
+        'friend_requests_count': friend_requests.count(),
         'notifications_count': notifications.count(),
     }
     
