@@ -98,7 +98,8 @@ class ProfileUpdateForm(forms.ModelForm):
                 'placeholder': 'https://your-website.com'
             }),
             'avatar': forms.FileInput(attrs={
-                'class': 'form-control'
+                'class': 'form-control',
+                'accept': 'image/*'
             })
         }
     
@@ -110,9 +111,31 @@ class ProfileUpdateForm(forms.ModelForm):
             self.fields['email'].initial = self.instance.user.email
             
         # Add CSS classes
-        self.fields['first_name'].widget.attrs.update({'class': 'form-control'})
-        self.fields['last_name'].widget.attrs.update({'class': 'form-control'})
-        self.fields['email'].widget.attrs.update({'class': 'form-control'})
+        self.fields['first_name'].widget.attrs.update({
+            'class': 'form-control',
+            'placeholder': 'First Name'
+        })
+        self.fields['last_name'].widget.attrs.update({
+            'class': 'form-control',
+            'placeholder': 'Last Name'
+        })
+        self.fields['email'].widget.attrs.update({
+            'class': 'form-control',
+            'placeholder': 'Email Address'
+        })
+    
+    def clean_avatar(self):
+        avatar = self.cleaned_data.get('avatar')
+        if avatar:
+            # Check file size (max 5MB)
+            if avatar.size > 5 * 1024 * 1024:
+                raise ValidationError("Image file too large. Please select an image smaller than 5MB.")
+            
+            # Check file type
+            if not avatar.content_type.startswith('image/'):
+                raise ValidationError("Please upload a valid image file.")
+        
+        return avatar
     
     def clean_email(self):
         email = self.cleaned_data.get('email')

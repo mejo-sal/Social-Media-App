@@ -21,24 +21,13 @@ def home_view(request):
     # Get recent notifications
     notifications = user.notifications.filter(is_read=False)[:5]
     
-    # Get friend suggestions (users who are not friends yet)
-    existing_friend_ids = [friend.id for friend in friends] + [user.id]
-    suggested_friends = User.objects.exclude(id__in=existing_friend_ids)[:5]
-    
     context = {
         'user': user,
         'friends': friends,
         'recent_posts': recent_posts,
         'notifications': notifications,
-        'suggested_friends': suggested_friends,
         'friends_count': len(friends),
         'notifications_count': notifications.count(),
     }
     
     return render(request, 'posts/home.html', context)
-
-
-@login_required
-def profile_view(request):
-    """User profile view"""
-    return render(request, 'accounts/profile.html', {'user': request.user})

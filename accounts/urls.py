@@ -13,6 +13,6 @@ urlpatterns = [
     
     # Profile URLs
     path('profile/', views.profile_view, name='profile'),
-    path('profile/<str:username>/', views.profile_view, name='profile_detail'),
     path('profile/edit/', views.profile_edit_view, name='profile_edit'),
+    path('profile/<str:username>/', views.profile_view, name='profile_detail'),
 ]
