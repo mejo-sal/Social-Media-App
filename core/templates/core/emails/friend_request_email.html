@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Friend Request - {{ site_name }}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 300;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .user-info {
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+        }
+        .user-name {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .user-username {
+            color: #6c757d;
+            font-size: 14px;
+        }
+        .message {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px 30px;
+            text-align: center;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        .social-icon {
+            width: 24px;
+            height: 24px;
+            background-color: #667eea;
+            border-radius: 50%;
+            display: inline-block;
+            margin: 0 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>{{ site_name }}</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">You have a new friend request!</p>
+        </div>
+        
+        <div class="content">
+            <p class="message">Hi {{ to_user.first_name }},</p>
+            
+            <div class="user-info">
+                <div class="user-name">{{ from_user.first_name }} {{ from_user.last_name }}</div>
+                <div class="user-username">@{{ from_user.username }}</div>
+            </div>
+            
+            <p class="message">
+                <strong>{{ from_user.first_name }} {{ from_user.last_name }}</strong> wants to connect with you on {{ site_name }}!
+            </p>
+            
+            <p class="message">
+                Log in to your account to accept or decline this friend request.
+            </p>
+            
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{ login_url }}" class="btn">View Friend Request</a>
+            </div>
+            
+            <p style="color: #6c757d; font-size: 14px; margin-top: 30px;">
+                You received this email because your notification settings allow friend request emails. 
+                You can change your notification preferences in your account settings.
+            </p>
+        </div>
+        
+        <div class="footer">
+            <p>
+                This email was sent by <strong>{{ site_name }}</strong><br>
+                <a href="{{ login_url }}">Visit our website</a>
+            </p>
+            <p style="font-size: 12px; margin-top: 10px;">
+                © 2024 {{ site_name }}. All rights reserved.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

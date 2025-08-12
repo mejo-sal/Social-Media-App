@@ -32,6 +32,7 @@ urlpatterns = [
     path('posts/', include('posts.urls')),
     path('friends/', include('core.urls')),
     path('settings/', include('user_settings.urls')),
+    path('notifications/', include('notifications.urls')),
     path('', home_redirect, name='home'),
 ]
 

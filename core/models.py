@@ -85,6 +85,21 @@ class Friendship(models.Model):
             elif existing.status == 'declined':
                 existing.status = 'pending'
                 existing.save()
+                
+                # Create notification for resent request
+                from notifications.models import Notification
+                Notification.create_notification(
+                    recipient=to_user,
+                    sender=from_user,
+                    notification_type='friend_request',
+                    message=f'{from_user.get_full_name() or from_user.username} sent you a friend request.',
+                    content_object=existing
+                )
+                
+                # Send email notification for resent request
+                from .emails import send_friend_request_email
+                send_friend_request_email(existing)
+                
                 return existing, "Friend request sent"
         
         # Create new friend request
@@ -93,12 +108,41 @@ class Friendship(models.Model):
             to_user=to_user,
             status='pending'
         )
+        
+        # Create notification
+        from notifications.models import Notification
+        Notification.create_notification(
+            recipient=to_user,
+            sender=from_user,
+            notification_type='friend_request',
+            message=f'{from_user.get_full_name() or from_user.username} sent you a friend request.',
+            content_object=friendship
+        )
+        
+        # Send email notification
+        from .emails import send_friend_request_email
+        send_friend_request_email(friendship)
+        
         return friendship, "Friend request sent"
     
     def accept(self):
         """Accept the friend request"""
         self.status = 'accepted'
         self.save()
+        
+        # Create notification for the original sender
+        from notifications.models import Notification
+        Notification.create_notification(
+            recipient=self.from_user,
+            sender=self.to_user,
+            notification_type='friend_accept',
+            message=f'{self.to_user.get_full_name() or self.to_user.username} accepted your friend request!',
+            content_object=self
+        )
+        
+        # Send email notification to the original sender
+        from .emails import send_friend_request_accepted_email
+        send_friend_request_accepted_email(self)
     
     def decline(self):
         """Decline the friend request"""

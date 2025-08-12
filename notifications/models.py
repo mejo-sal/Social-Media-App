@@ -84,10 +84,12 @@ class EmailLog(models.Model):
         ('password_reset', 'Password Reset'),
         ('email_verification', 'Email Verification'),
         ('notification', 'Notification Email'),
+        ('friend_request', 'Friend Request'),
+        ('friend_request_accepted', 'Friend Request Accepted'),
     ]
     
     recipient = models.ForeignKey(User, on_delete=models.CASCADE, related_name='email_logs')
-    email_type = models.CharField(max_length=20, choices=EMAIL_TYPES)
+    email_type = models.CharField(max_length=30, choices=EMAIL_TYPES)
     subject = models.CharField(max_length=255)
     
     # Email status

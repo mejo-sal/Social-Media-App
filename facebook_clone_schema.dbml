@@ -107,7 +107,7 @@ Table notifications_notification {
 Table notifications_emaillog {
   id integer [primary key, increment]
   recipient_id integer [not null, ref: > auth_user.id]
-  email_type varchar(20) [not null]
+  email_type varchar(30) [not null]
   subject varchar(255) [not null]
   is_sent boolean [default: false]
   sent_at datetime
@@ -146,6 +146,8 @@ Enum email_types {
   password_reset
   email_verification
   notification
+  friend_request
+  friend_request_accepted
 }
 
 // Notes about key relationships and constraints
@@ -161,6 +163,7 @@ Note: '''
 - Basic notification system
 - Email logging for sent emails
 - User privacy and notification settings
+- Automated email notifications for friend requests
 
 ## Business Rules:
 1. Each user has exactly one profile and one settings record
@@ -169,8 +172,18 @@ Note: '''
 4. Posts have three privacy levels: public, friends, private
 5. Comments are single-level only (no replies)
 6. Notifications can be linked to any content type via generic foreign key
+7. Email notifications respect user settings (email_notifications and notify_friend_requests)
+8. Email logs track all sent/failed emails for debugging and audit purposes
 
 ## Auto-created Records:
 - Profile and UserSettings are automatically created when a new User is registered
 - Like/comment counts are automatically updated via model methods
+- Friend request emails are automatically sent when requests are created/accepted
+- Email logs are automatically created for tracking email delivery status
+
+## Email Notification System:
+- Friend request emails sent when new requests are created
+- Friend request accepted emails sent when requests are accepted
+- Email delivery respects user notification preferences
+- All email attempts are logged with success/failure status
 '''
