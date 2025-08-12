@@ -1,5 +1,5 @@
 from django import forms
-from .models import Post
+from .models import Post, Comment
 
 
 class PostCreateForm(forms.ModelForm):
@@ -36,3 +36,25 @@ class PostCreateForm(forms.ModelForm):
                 raise forms.ValidationError("Please upload a valid image file.")
         
         return image
+
+
+class CommentCreateForm(forms.ModelForm):
+    """Form for creating comments on posts"""
+    
+    class Meta:
+        model = Comment
+        fields = ('content',)
+        widgets = {
+            'content': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Write a comment...',
+                'maxlength': '500'
+            })
+        }
+    
+    def clean_content(self):
+        content = self.cleaned_data.get('content')
+        if not content or not content.strip():
+            raise forms.ValidationError("Comment cannot be empty.")
+        return content.strip()

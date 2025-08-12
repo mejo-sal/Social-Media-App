@@ -2,6 +2,123 @@
 
 {% block title %}Home - SocialHub{% endblock %}
 
+{% block extra_css %}
+<style>
+    .modal .form-control {
+        border: none;
+        resize: none;
+        font-size: 16px;
+    }
+    .modal .form-control:focus {
+        outline: none;
+        box-shadow: none;
+    }
+    .modal .form-select {
+        border: 1px solid #ddd;
+        font-size: 14px;
+    }
+    .character-count {
+        font-size: 12px;
+        color: #6c757d;
+        text-align: right;
+        margin-top: 5px;
+    }
+    .post-button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    .like-btn {
+        transition: all 0.2s ease;
+    }
+    .like-btn.liked {
+        color: #dc3545 !important;
+    }
+    
+    /* Image Upload Styles */
+    .image-upload-area {
+        border: 2px dashed #dee2e6;
+        border-radius: 0.5rem;
+        padding: 2rem;
+        text-align: center;
+        background-color: #f8f9fa;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        margin-bottom: 1rem;
+    }
+    
+    .image-upload-area:hover {
+        border-color: #007bff;
+        background-color: #e7f1ff;
+    }
+    
+    .image-upload-area.drag-over {
+        border-color: #007bff;
+        background-color: #e7f1ff;
+        transform: scale(1.02);
+    }
+    
+    .image-upload-icon {
+        font-size: 2.5rem;
+        color: #6c757d;
+        margin-bottom: 1rem;
+    }
+    
+    .image-preview-container {
+        position: relative;
+        margin-bottom: 1rem;
+    }
+    
+    .image-preview {
+        max-width: 100%;
+        max-height: 300px;
+        border-radius: 0.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .image-remove-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background-color: rgba(220, 53, 69, 0.9);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .image-remove-btn:hover {
+        background-color: rgba(220, 53, 69, 1);
+    }
+    
+    .upload-options {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .upload-btn {
+        background-color: #28a745;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 0.25rem;
+        cursor: pointer;
+        transition: background-color 0.2s;
+    }
+    
+    .upload-btn:hover {
+        background-color: #218838;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row">
     <!-- Left Sidebar -->
@@ -104,12 +221,13 @@
 
                         <!-- Post Actions -->
                         <div class="d-flex justify-content-around border-top pt-3">
-                            <button class="btn btn-link text-decoration-none">
-                                <i class="far fa-thumbs-up me-2"></i>Like
+                            <button class="btn btn-link text-decoration-none like-btn {% if post.user_has_liked %}liked{% endif %}" 
+                                    data-post-id="{{ post.pk }}">
+                                <i class="{% if post.user_has_liked %}fas{% else %}far{% endif %} fa-heart me-2"></i>Like
                             </button>
-                            <button class="btn btn-link text-decoration-none">
+                            <a href="{% url 'posts:post_detail' pk=post.pk %}" class="btn btn-link text-decoration-none">
                                 <i class="far fa-comment me-2"></i>Comment
-                            </button>
+                            </a>
                             <button class="btn btn-link text-decoration-none">
                                 <i class="fas fa-share me-2"></i>Share
                             </button>
@@ -271,7 +389,7 @@
     </div>
 </div>
 
-<!-- Create Post Modal (Placeholder) -->
+<!-- Create Post Modal -->
 <div class="modal fade" id="createPostModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -279,21 +397,303 @@
                 <h5 class="modal-title">Create Post</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <div class="d-flex align-items-center mb-3">
-                    <img src="{{ user.profile.avatar.url }}" alt="Profile" class="rounded-circle me-3" width="40" height="40" style="object-fit: cover;">
-                    <div>
-                        <h6 class="mb-0">{{ user.first_name }} {{ user.last_name }}</h6>
-                        <small class="text-muted">Post to: Public</small>
+            <form method="post" action="{% url 'posts:create_post' %}" enctype="multipart/form-data">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="d-flex align-items-center mb-3">
+                        <img src="{{ user.profile.avatar.url }}" alt="Profile" class="rounded-circle me-3" width="40" height="40" style="object-fit: cover;">
+                        <div>
+                            <h6 class="mb-0">{{ user.first_name }} {{ user.last_name }}</h6>
+                            <small class="text-muted">Post to: {{ post_form.privacy.value|default:"Public" }}</small>
+                        </div>
+                    </div>
+                    
+                    <!-- Post Content -->
+                    <div class="mb-3">
+                        {{ post_form.content }}
+                        <div class="character-count">
+                            <span id="char-count">0</span>/2000 characters
+                        </div>
+                    </div>
+                    
+                    <!-- Image Upload Section -->
+                    <div class="mb-3">
+                        <div class="upload-options">
+                            <button type="button" class="upload-btn" onclick="document.getElementById('id_image').click()">
+                                <i class="fas fa-camera me-2"></i>Add Photo
+                            </button>
+                            <small class="text-muted">JPG, PNG, GIF (max 10MB)</small>
+                        </div>
+                        
+                        <!-- Hidden file input -->
+                        <div class="visually-hidden">
+                            {{ post_form.image }}
+                        </div>
+                        
+                        <!-- Drag and drop area -->
+                        <div class="image-upload-area" id="imageUploadArea">
+                            <div class="image-upload-icon">
+                                <i class="fas fa-cloud-upload-alt"></i>
+                            </div>
+                            <h6>Drag and drop an image here</h6>
+                            <p class="text-muted mb-0">or click to browse</p>
+                        </div>
+                        
+                        <!-- Image preview -->
+                        <div class="image-preview-container" id="imagePreviewContainer" style="display: none;">
+                            <img id="imagePreview" class="image-preview" src="" alt="Preview">
+                            <button type="button" class="image-remove-btn" id="removeImageBtn">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Privacy Setting -->
+                    <div class="mb-3">
+                        <label for="{{ post_form.privacy.id_for_label }}" class="form-label">
+                            <i class="fas fa-globe me-1"></i>Who can see this?
+                        </label>
+                        {{ post_form.privacy }}
                     </div>
                 </div>
-                <textarea class="form-control border-0" rows="4" placeholder="What's on your mind, {{ user.first_name }}?"></textarea>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="button" class="btn btn-primary">Post</button>
-            </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary post-button" id="postButton">Post</button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const postTextarea = document.querySelector('#createPostModal textarea[name="content"]');
+    const charCount = document.getElementById('char-count');
+    const postButton = document.getElementById('postButton');
+    const createPostModal = document.getElementById('createPostModal');
+    
+    // Debug: Check if elements are found
+    console.log('DOM Elements found:', {
+        postTextarea: !!postTextarea,
+        charCount: !!charCount,
+        postButton: !!postButton,
+        createPostModal: !!createPostModal
+    });
+    
+    // Image upload elements
+    const fileInput = document.getElementById('id_image');
+    const uploadArea = document.getElementById('imageUploadArea');
+    const previewContainer = document.getElementById('imagePreviewContainer');
+    const previewImage = document.getElementById('imagePreview');
+    const removeBtn = document.getElementById('removeImageBtn');
+    
+    // Character counter and post button state
+    function updateCharacterCount() {
+        if (!postTextarea || !charCount || !postButton) {
+            console.error('Missing DOM elements:', {
+                postTextarea: !!postTextarea,
+                charCount: !!charCount,
+                postButton: !!postButton
+            });
+            return;
+        }
+        
+        const currentLength = postTextarea.value.length;
+        const maxLength = 2000;
+        const hasImage = fileInput && fileInput.files.length > 0;
+        
+        charCount.textContent = currentLength;
+        
+        // Enable/disable post button based on content or image
+        if ((currentLength > 0 && currentLength <= maxLength) || hasImage) {
+            postButton.disabled = false;
+        } else {
+            postButton.disabled = true;
+        }
+        
+        // Change color if approaching limit
+        if (currentLength > maxLength * 0.9) {
+            charCount.style.color = '#dc3545'; // Red
+        } else if (currentLength > maxLength * 0.8) {
+            charCount.style.color = '#ffc107'; // Yellow
+        } else {
+            charCount.style.color = '#6c757d'; // Gray
+        }
+    }
+    
+    // Like button functionality
+    function toggleLike(postId, button) {
+        fetch(`/posts/post/${postId}/like/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                alert(data.error);
+                return;
+            }
+            
+            const icon = button.querySelector('i');
+            
+            if (data.liked) {
+                button.classList.add('liked');
+                icon.classList.remove('far');
+                icon.classList.add('fas');
+            } else {
+                button.classList.remove('liked');
+                icon.classList.remove('fas');
+                icon.classList.add('far');
+            }
+            
+            // Update likes count in the post stats
+            const postCard = button.closest('.card');
+            const likesSpan = postCard.querySelector('.d-flex.justify-content-between span:first-child');
+            if (likesSpan) {
+                if (data.likes_count > 0) {
+                    likesSpan.textContent = `${data.likes_count} like${data.likes_count > 1 ? 's' : ''}`;
+                } else {
+                    likesSpan.textContent = '0 likes';
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred. Please try again.');
+        });
+    }
+
+    // Event listeners
+    if (postTextarea && charCount && postButton) {
+        postTextarea.addEventListener('input', updateCharacterCount);
+        postTextarea.addEventListener('keyup', updateCharacterCount);
+        
+        // Focus the textarea when modal opens
+        if (createPostModal) {
+            createPostModal.addEventListener('shown.bs.modal', function() {
+                postTextarea.focus();
+                updateCharacterCount(); // Update button state when modal opens
+            });
+            
+            // Clear form when modal closes
+            createPostModal.addEventListener('hidden.bs.modal', function() {
+                postTextarea.value = '';
+                clearImagePreview();
+                updateCharacterCount();
+            });
+        }
+        
+        // Initial state
+        updateCharacterCount();
+        
+        // Add event listeners to all like buttons
+        document.querySelectorAll('.like-btn').forEach(button => {
+            button.addEventListener('click', function() {
+                const postId = this.getAttribute('data-post-id');
+                toggleLike(postId, this);
+            });
+        });
+    } else {
+        console.error('Required DOM elements not found for post functionality');
+    }
+    
+    // File input change event
+    if (fileInput) {
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleImageFile(file);
+            } else {
+                clearImagePreview();
+            }
+        });
+    }
+    
+    // Click upload area to trigger file input
+    if (uploadArea) {
+        uploadArea.addEventListener('click', function() {
+            fileInput.click();
+        });
+        
+        // Drag and drop functionality
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            uploadArea.classList.add('drag-over');
+        });
+        
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+        });
+        
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('drag-over');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                if (file.type.startsWith('image/')) {
+                    // Set the file to the input
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    fileInput.files = dt.files;
+                    
+                    handleImageFile(file);
+                } else {
+                    alert('Please drop an image file.');
+                }
+            }
+        });
+    }
+    
+    // Remove image button
+    if (removeBtn) {
+        removeBtn.addEventListener('click', function() {
+            clearImagePreview();
+        });
+    }
+    
+    function handleImageFile(file) {
+        // Validate file size (10MB)
+        if (file.size > 10 * 1024 * 1024) {
+            alert('File size must be less than 10MB.');
+            return;
+        }
+        
+        // Validate file type
+        if (!file.type.startsWith('image/')) {
+            alert('Please select an image file.');
+            return;
+        }
+        
+        // Create preview
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            previewImage.src = e.target.result;
+            uploadArea.style.display = 'none';
+            previewContainer.style.display = 'block';
+            
+            // Update post button state
+            updateCharacterCount();
+        };
+        reader.readAsDataURL(file);
+    }
+    
+    function clearImagePreview() {
+        if (fileInput) fileInput.value = '';
+        if (previewImage) previewImage.src = '';
+        if (uploadArea) uploadArea.style.display = 'block';
+        if (previewContainer) previewContainer.style.display = 'none';
+        
+        // Update post button state
+        updateCharacterCount();
+    }
+});
+</script>
 {% endblock %}

@@ -11,11 +11,13 @@ from django.contrib.auth.tokens import default_token_generator
 from django.urls import reverse
 from django.conf import settings
 from django.http import HttpResponse
+from django.core.paginator import Paginator
 import uuid
 
 from .models import Profile
 from .forms import UserRegistrationForm, UserLoginForm, PasswordResetRequestForm, ProfileUpdateForm
 from notifications.models import Notification, EmailLog
+from posts.models import Post, Like
 
 
 def register_view(request):
@@ -173,10 +175,30 @@ def profile_view(request, username=None):
         profile = request.user.profile
         is_own_profile = True
     
+    # Get user's posts
+    if is_own_profile:
+        # Show all posts if it's the user's own profile
+        posts = Post.objects.filter(author=user).order_by('-created_at')
+    else:
+        # Show only public posts for other users (we'll add friend logic later)
+        posts = Post.objects.filter(author=user, privacy='public').order_by('-created_at')
+    
+    # Paginate posts
+    paginator = Paginator(posts, 10)  # Show 10 posts per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
+    # Add like information for each post if user is authenticated
+    if request.user.is_authenticated:
+        for post in page_obj:
+            post.user_has_liked = Like.objects.filter(user=request.user, post=post).exists()
+    
     context = {
         'profile_user': user,
         'profile': profile,
         'is_own_profile': is_own_profile,
+        'posts': page_obj,
+        'posts_count': posts.count(),
     }
     return render(request, 'accounts/profile.html', context)
 

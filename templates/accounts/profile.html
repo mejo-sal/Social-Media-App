@@ -2,84 +2,380 @@
 
 {% block title %}{{ profile_user.first_name }} {{ profile_user.last_name }} - SocialHub{% endblock %}
 
+{% block extra_css %}
+<style>
+    .profile-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 0.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .profile-stats {
+        display: flex;
+        gap: 2rem;
+        margin-top: 1rem;
+    }
+    
+    .profile-stat {
+        text-align: center;
+    }
+    
+    .profile-stat-number {
+        font-size: 1.5rem;
+        font-weight: bold;
+        display: block;
+    }
+    
+    .profile-stat-label {
+        font-size: 0.875rem;
+        opacity: 0.9;
+    }
+    
+    .post-card {
+        border: none;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+        transition: all 0.3s ease;
+    }
+    
+    .post-card:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    
+    .post-author {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .post-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 0.75rem;
+    }
+    
+    .post-meta {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin: 0;
+    }
+    
+    .privacy-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 1rem;
+        margin-left: 0.5rem;
+    }
+    
+    .privacy-public {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    
+    .privacy-friends {
+        background-color: #cce7ff;
+        color: #004085;
+    }
+    
+    .privacy-private {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #6c757d;
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        color: #dee2e6;
+        margin-bottom: 1rem;
+    }
+    
+    .like-btn {
+        transition: all 0.2s ease;
+    }
+    
+    .like-btn.liked {
+        color: #dc3545 !important;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="row">
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-body text-center">
-                <img src="{{ profile.avatar.url }}" alt="Profile Picture" class="rounded-circle mb-3" width="150" height="150" style="object-fit: cover;">
-                <h4>{{ profile_user.first_name }} {{ profile_user.last_name }}</h4>
-                <p class="text-muted">@{{ profile_user.username }}</p>
+<div class="container">
+    <!-- Profile Header -->
+    <div class="profile-header p-4">
+        <div class="row align-items-center">
+            <div class="col-md-3 text-center">
+                <img src="{{ profile.avatar.url }}" alt="{{ profile_user.first_name }} {{ profile_user.last_name }}" class="rounded-circle mb-3" width="120" height="120" style="object-fit: cover; border: 4px solid white;">
+            </div>
+            <div class="col-md-9">
+                <h1 class="mb-2">{{ profile_user.first_name }} {{ profile_user.last_name }}</h1>
+                <p class="mb-1">@{{ profile_user.username }}</p>
+                
                 {% if profile.bio %}
-                    <p>{{ profile.bio }}</p>
+                <p class="mb-3">{{ profile.bio }}</p>
                 {% endif %}
+                
+                {% if profile.location %}
+                <p class="mb-3">
+                    <i class="fas fa-map-marker-alt me-1"></i>
+                    {{ profile.location }}
+                </p>
+                {% endif %}
+                
+                <div class="profile-stats">
+                    <div class="profile-stat">
+                        <span class="profile-stat-number">{{ posts_count }}</span>
+                        <span class="profile-stat-label">Post{{ posts_count|pluralize }}</span>
+                    </div>
+                    <div class="profile-stat">
+                        <span class="profile-stat-number">0</span>
+                        <span class="profile-stat-label">Following</span>
+                    </div>
+                    <div class="profile-stat">
+                        <span class="profile-stat-number">0</span>
+                        <span class="profile-stat-label">Followers</span>
+                    </div>
+                    <div class="profile-stat">
+                        <span class="profile-stat-number">{{ profile.created_at|date:"Y" }}</span>
+                        <span class="profile-stat-label">Joined</span>
+                    </div>
+                </div>
+                
                 {% if is_own_profile %}
-                    <a href="{% url 'profile_edit' %}" class="btn btn-primary">
+                <div class="mt-3">
+                    <a href="{% url 'profile_edit' %}" class="btn btn-outline-light">
                         <i class="fas fa-edit me-1"></i>Edit Profile
                     </a>
+                </div>
                 {% endif %}
             </div>
         </div>
     </div>
-    <div class="col-md-8">
-        <div class="card">
-            <div class="card-header">
-                <h5><i class="fas fa-info-circle me-2"></i>Profile Information</h5>
-            </div>
-            <div class="card-body">
-                <div class="row mb-2">
-                    <div class="col-sm-3"><strong>Email:</strong></div>
-                    <div class="col-sm-9">{{ profile_user.email|default:"Not provided" }}</div>
-                </div>
-                {% if profile.location %}
-                <div class="row mb-2">
-                    <div class="col-sm-3"><strong>Location:</strong></div>
-                    <div class="col-sm-9">{{ profile.location }}</div>
-                </div>
+    
+    <!-- Posts Section -->
+    <div class="row">
+        <div class="col-lg-8 mx-auto">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3>
+                    {% if is_own_profile %}
+                        Your Posts
+                    {% else %}
+                        {{ profile_user.first_name|default:profile_user.username }}'s Posts
+                    {% endif %}
+                </h3>
+                {% if is_own_profile %}
+                <a href="{% url 'posts:home' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>New Post
+                </a>
                 {% endif %}
-                {% if profile.website %}
-                <div class="row mb-2">
-                    <div class="col-sm-3"><strong>Website:</strong></div>
-                    <div class="col-sm-9"><a href="{{ profile.website }}" target="_blank">{{ profile.website }}</a></div>
-                </div>
-                {% endif %}
-                <div class="row mb-2">
-                    <div class="col-sm-3"><strong>Joined:</strong></div>
-                    <div class="col-sm-9">{{ profile.created_at|date:"F d, Y" }}</div>
-                </div>
             </div>
-        </div>
-        
-        {% if is_own_profile %}
-        <div class="card mt-4">
-            <div class="card-header">
-                <h5><i class="fas fa-bell me-2"></i>Recent Notifications</h5>
-            </div>
-            <div class="card-body">
-                {% if user.notifications.all %}
-                    {% for notification in user.notifications.all|slice:":5" %}
-                    <div class="d-flex justify-content-between align-items-center border-bottom py-2">
-                        <div>
-                            <i class="fas fa-bell text-primary me-2"></i>
-                            {{ notification.message }}
+            
+            <!-- Posts Feed -->
+            {% if posts %}
+                {% for post in posts %}
+                <div class="post-card card">
+                    <div class="card-body">
+                        <!-- Post Header -->
+                        <div class="post-author">
+                            <img src="{{ post.author.profile.avatar.url }}" alt="{{ post.author.first_name }} {{ post.author.last_name }}" class="post-avatar">
+                            <div class="flex-grow-1">
+                                <h6 class="mb-0">{{ post.author.first_name }} {{ post.author.last_name }}</h6>
+                                <p class="post-meta">
+                                    {{ post.created_at|timesince }} ago
+                                    <span class="privacy-badge privacy-{{ post.privacy }}">
+                                        {% if post.privacy == 'public' %}
+                                            <i class="fas fa-globe"></i>
+                                        {% elif post.privacy == 'friends' %}
+                                            <i class="fas fa-users"></i>
+                                        {% else %}
+                                            <i class="fas fa-lock"></i>
+                                        {% endif %}
+                                        {{ post.get_privacy_display }}
+                                    </span>
+                                </p>
+                            </div>
+                            {% if post.author == user %}
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-ellipsis-h"></i>
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="#"><i class="fas fa-edit me-2"></i>Edit</a></li>
+                                    <li><a class="dropdown-item text-danger" href="#"><i class="fas fa-trash me-2"></i>Delete</a></li>
+                                </ul>
+                            </div>
+                            {% endif %}
                         </div>
-                        <small class="text-muted">{{ notification.created_at|timesince }} ago</small>
+
+                        <!-- Post Content -->
+                        {% if post.content %}
+                        <div class="mb-3">
+                            <p>{{ post.content|linebreaks }}</p>
+                        </div>
+                        {% endif %}
+
+                        <!-- Post Image -->
+                        {% if post.image %}
+                        <div class="mb-3">
+                            <img src="{{ post.image.url }}" alt="Post image" class="img-fluid rounded">
+                        </div>
+                        {% endif %}
+
+                        <!-- Post Stats -->
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <small class="text-muted">
+                                {% if post.likes_count %}
+                                    <i class="fas fa-heart text-danger"></i> {{ post.likes_count }} like{{ post.likes_count|pluralize }}
+                                {% endif %}
+                            </small>
+                            <small class="text-muted">
+                                {% if post.comments_count %}
+                                    {{ post.comments_count }} comment{{ post.comments_count|pluralize }}
+                                {% endif %}
+                            </small>
+                        </div>
+
+                        <!-- Post Actions -->
+                        <div class="d-flex justify-content-around border-top pt-3">
+                            <button class="btn btn-link text-decoration-none like-btn {% if post.user_has_liked %}liked{% endif %}" 
+                                    data-post-id="{{ post.pk }}">
+                                <i class="{% if post.user_has_liked %}fas{% else %}far{% endif %} fa-heart me-2"></i>Like
+                            </button>
+                            <a href="{% url 'posts:post_detail' pk=post.pk %}" class="btn btn-link text-decoration-none">
+                                <i class="far fa-comment me-2"></i>Comment
+                            </a>
+                            <button class="btn btn-link text-decoration-none">
+                                <i class="fas fa-share me-2"></i>Share
+                            </button>
+                        </div>
                     </div>
-                    {% endfor %}
-                {% else %}
-                    <p class="text-muted">No notifications yet.</p>
+                </div>
+                {% endfor %}
+
+                <!-- Pagination -->
+                {% if posts.has_other_pages %}
+                <nav aria-label="Posts pagination" class="mb-4">
+                    <ul class="pagination justify-content-center">
+                        {% if posts.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ posts.previous_page_number }}">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for num in posts.paginator.page_range %}
+                            {% if posts.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > posts.number|add:'-3' and num < posts.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if posts.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ posts.next_page_number }}">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
                 {% endif %}
-            </div>
+
+            {% else %}
+                <!-- Empty State -->
+                <div class="empty-state">
+                    <i class="fas fa-newspaper"></i>
+                    <h4>
+                        {% if is_own_profile %}
+                            No posts yet
+                        {% else %}
+                            No posts to show
+                        {% endif %}
+                    </h4>
+                    <p>
+                        {% if is_own_profile %}
+                            Share your first post with your friends!
+                        {% else %}
+                            {{ profile_user.first_name|default:profile_user.username }} hasn't shared any posts yet.
+                        {% endif %}
+                    </p>
+                    {% if is_own_profile %}
+                    <a href="{% url 'posts:home' %}" class="btn btn-primary">
+                        Create Your First Post
+                    </a>
+                    {% endif %}
+                </div>
+            {% endif %}
         </div>
-        {% endif %}
     </div>
 </div>
 
-<div class="row mt-4">
-    <div class="col-12 text-center">
-        <a href="{% url 'home' %}" class="btn btn-primary">
-            <i class="fas fa-home me-2"></i>Back to Home
-        </a>
-    </div>
-</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listeners to all like buttons
+    document.querySelectorAll('.like-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const postId = this.getAttribute('data-post-id');
+            toggleLike(postId, this);
+        });
+    });
+});
+
+function toggleLike(postId, button) {
+    fetch(`/posts/post/${postId}/like/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
+        
+        const icon = button.querySelector('i');
+        
+        if (data.liked) {
+            button.classList.add('liked');
+            icon.classList.remove('far');
+            icon.classList.add('fas');
+        } else {
+            button.classList.remove('liked');
+            icon.classList.remove('fas');
+            icon.classList.add('far');
+        }
+        
+        // Update likes count in the post stats
+        const postCard = button.closest('.post-card');
+        const likesCount = postCard.querySelector('.text-muted');
+        if (data.likes_count > 0) {
+            likesCount.innerHTML = `<i class="fas fa-heart text-danger"></i> ${data.likes_count} like${data.likes_count > 1 ? 's' : ''}`;
+        } else {
+            likesCount.innerHTML = '';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+    });
+}
+</script>
 {% endblock %}

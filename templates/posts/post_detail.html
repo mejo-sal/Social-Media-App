@@ -1,0 +1,365 @@
+{% extends 'base.html' %}
+
+{% block title %}Post by {{ post.author.first_name }} {{ post.author.last_name }} - SocialHub{% endblock %}
+
+{% block extra_css %}
+<style>
+    .post-detail-card {
+        border: none;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        border-radius: 0.75rem;
+        margin-bottom: 2rem;
+    }
+    
+    .post-author {
+        display: flex;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+    
+    .post-avatar {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 1rem;
+    }
+    
+    .post-meta {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin: 0;
+    }
+    
+    .privacy-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 1rem;
+        margin-left: 0.5rem;
+    }
+    
+    .privacy-public {
+        background-color: #d4edda;
+        color: #155724;
+    }
+    
+    .privacy-friends {
+        background-color: #cce7ff;
+        color: #004085;
+    }
+    
+    .privacy-private {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+    
+    .like-btn {
+        transition: all 0.2s ease;
+    }
+    
+    .like-btn.liked {
+        color: #dc3545 !important;
+    }
+    
+    .comment-card {
+        border: none;
+        border-left: 3px solid #e9ecef;
+        border-radius: 0 0.5rem 0.5rem 0;
+        margin-bottom: 1rem;
+        background-color: #f8f9fa;
+    }
+    
+    .comment-author {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.5rem;
+    }
+    
+    .comment-avatar {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+        margin-right: 0.75rem;
+    }
+    
+    .back-btn {
+        margin-bottom: 1.5rem;
+    }
+    
+    .comments-section {
+        background-color: #f8f9fa;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        margin-top: 2rem;
+    }
+    
+    .comment-form {
+        background-color: white;
+        border-radius: 0.5rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Back Button -->
+            <div class="back-btn">
+                <a href="javascript:history.back()" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back
+                </a>
+            </div>
+            
+            <!-- Post Detail -->
+            <div class="post-detail-card card">
+                <div class="card-body">
+                    <!-- Post Header -->
+                    <div class="post-author">
+                        <img src="{{ post.author.profile.avatar.url }}" alt="{{ post.author.first_name }} {{ post.author.last_name }}" class="post-avatar">
+                        <div class="flex-grow-1">
+                            <h5 class="mb-0">
+                                <a href="{% url 'profile_detail' username=post.author.username %}" class="text-decoration-none">
+                                    {{ post.author.first_name }} {{ post.author.last_name }}
+                                </a>
+                            </h5>
+                            <p class="post-meta">
+                                {{ post.created_at|timesince }} ago
+                                <span class="privacy-badge privacy-{{ post.privacy }}">
+                                    {% if post.privacy == 'public' %}
+                                        <i class="fas fa-globe"></i>
+                                    {% elif post.privacy == 'friends' %}
+                                        <i class="fas fa-users"></i>
+                                    {% else %}
+                                        <i class="fas fa-lock"></i>
+                                    {% endif %}
+                                    {{ post.get_privacy_display }}
+                                </span>
+                            </p>
+                        </div>
+                        {% if is_own_post %}
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-ellipsis-h"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#"><i class="fas fa-edit me-2"></i>Edit</a></li>
+                                <li><a class="dropdown-item text-danger" href="#"><i class="fas fa-trash me-2"></i>Delete</a></li>
+                            </ul>
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Post Content -->
+                    {% if post.content %}
+                    <div class="mb-3">
+                        <p class="fs-5">{{ post.content|linebreaks }}</p>
+                    </div>
+                    {% endif %}
+
+                    <!-- Post Image -->
+                    {% if post.image %}
+                    <div class="mb-3">
+                        <img src="{{ post.image.url }}" alt="Post image" class="img-fluid rounded">
+                    </div>
+                    {% endif %}
+
+                    <!-- Post Stats -->
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <small class="text-muted">
+                            {% if post.likes_count %}
+                                <i class="fas fa-heart text-danger"></i> {{ post.likes_count }} like{{ post.likes_count|pluralize }}
+                            {% endif %}
+                        </small>
+                        <small class="text-muted">
+                            {% if post.comments_count %}
+                                {{ post.comments_count }} comment{{ post.comments_count|pluralize }}
+                            {% endif %}
+                        </small>
+                    </div>
+
+                    <!-- Post Actions -->
+                    <div class="d-flex justify-content-around border-top pt-3">
+                        <button class="btn btn-link text-decoration-none like-btn {% if user_has_liked %}liked{% endif %}" 
+                                data-post-id="{{ post.pk }}">
+                            <i class="{% if user_has_liked %}fas{% else %}far{% endif %} fa-heart me-2"></i>
+                            <span class="like-text">{% if user_has_liked %}Unlike{% else %}Like{% endif %}</span>
+                        </button>
+                        <button class="btn btn-link text-decoration-none" onclick="document.getElementById('comment-form').scrollIntoView()">
+                            <i class="far fa-comment me-2"></i>Comment
+                        </button>
+                        <button class="btn btn-link text-decoration-none">
+                            <i class="fas fa-share me-2"></i>Share
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comments Section -->
+            <div class="comments-section">
+                <h4 class="mb-4">
+                    <i class="far fa-comments me-2"></i>
+                    Comments ({{ post.comments_count }})
+                </h4>
+
+                <!-- Comment Form -->
+                <div class="comment-form" id="comment-form">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="d-flex">
+                            <img src="{{ user.profile.avatar.url }}" alt="{{ user.first_name }} {{ user.last_name }}" class="comment-avatar me-3">
+                            <div class="flex-grow-1">
+                                {{ comment_form.content }}
+                                <div class="d-flex justify-content-between align-items-center mt-2">
+                                    <small class="text-muted">Max 500 characters</small>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-paper-plane me-2"></i>Post Comment
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Comments List -->
+                {% if comments %}
+                    {% for comment in comments %}
+                    <div class="comment-card card">
+                        <div class="card-body">
+                            <div class="comment-author">
+                                <img src="{{ comment.author.profile.avatar.url }}" alt="{{ comment.author.first_name }} {{ comment.author.last_name }}" class="comment-avatar">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-0">
+                                        <a href="{% url 'profile_detail' username=comment.author.username %}" class="text-decoration-none">
+                                            {{ comment.author.first_name }} {{ comment.author.last_name }}
+                                        </a>
+                                    </h6>
+                                    <small class="text-muted">{{ comment.created_at|timesince }} ago</small>
+                                </div>
+                                {% if comment.author == user %}
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-ellipsis-h"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item text-danger" href="#"><i class="fas fa-trash me-2"></i>Delete</a></li>
+                                    </ul>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="mt-2">
+                                <p class="mb-0">{{ comment.content|linebreaks }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+
+                    <!-- Pagination -->
+                    {% if comments.has_other_pages %}
+                    <nav aria-label="Comments pagination" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if comments.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ comments.previous_page_number }}">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                            
+                            {% for num in comments.paginator.page_range %}
+                                {% if comments.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% elif num > comments.number|add:'-3' and num < comments.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                            
+                            {% if comments.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ comments.next_page_number }}">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                    {% endif %}
+
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="far fa-comment-dots fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No comments yet</h5>
+                        <p class="text-muted">Be the first to comment on this post!</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listeners to like button
+    const likeBtn = document.querySelector('.like-btn');
+    if (likeBtn) {
+        likeBtn.addEventListener('click', function() {
+            const postId = this.getAttribute('data-post-id');
+            toggleLike(postId, this);
+        });
+    }
+});
+
+function toggleLike(postId, button) {
+    fetch(`/posts/post/${postId}/like/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            'Content-Type': 'application/json',
+        },
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert(data.error);
+            return;
+        }
+        
+        const icon = button.querySelector('i');
+        const text = button.querySelector('.like-text');
+        
+        if (data.liked) {
+            button.classList.add('liked');
+            icon.classList.remove('far');
+            icon.classList.add('fas');
+            text.textContent = 'Unlike';
+        } else {
+            button.classList.remove('liked');
+            icon.classList.remove('fas');
+            icon.classList.add('far');
+            text.textContent = 'Like';
+        }
+        
+        // Update likes count in the stats
+        const postStats = document.querySelector('.d-flex.justify-content-between.align-items-center.mb-3');
+        const likesElement = postStats.querySelector('small:first-child');
+        if (data.likes_count > 0) {
+            likesElement.innerHTML = `<i class="fas fa-heart text-danger"></i> ${data.likes_count} like${data.likes_count > 1 ? 's' : ''}`;
+        } else {
+            likesElement.innerHTML = '';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+    });
+}
+</script>
+{% endblock %}
