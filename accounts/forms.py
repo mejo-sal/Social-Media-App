@@ -127,13 +127,15 @@ class ProfileUpdateForm(forms.ModelForm):
     def clean_avatar(self):
         avatar = self.cleaned_data.get('avatar')
         if avatar:
-            # Check file size (max 5MB)
-            if avatar.size > 5 * 1024 * 1024:
-                raise ValidationError("Image file too large. Please select an image smaller than 5MB.")
-            
-            # Check file type
-            if not avatar.content_type.startswith('image/'):
-                raise ValidationError("Please upload a valid image file.")
+            # Only validate if it's a new upload (has content_type attribute)
+            if hasattr(avatar, 'content_type'):
+                # Check file size (max 5MB)
+                if avatar.size > 5 * 1024 * 1024:
+                    raise ValidationError("Image file too large. Please select an image smaller than 5MB.")
+                
+                # Check file type
+                if not avatar.content_type.startswith('image/'):
+                    raise ValidationError("Please upload a valid image file.")
         
         return avatar
     

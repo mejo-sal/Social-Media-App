@@ -50,12 +50,6 @@ class UserSettings(models.Model):
         help_text="Get notified of new friend requests"
     )
     
-    # Account Settings
-    two_factor_enabled = models.BooleanField(
-        default=False,
-        help_text="Enable two-factor authentication"
-    )
-    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

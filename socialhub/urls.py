@@ -30,6 +30,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('accounts/', include('accounts.urls')),
     path('posts/', include('posts.urls')),
+    path('settings/', include('user_settings.urls')),
     path('', home_redirect, name='home'),
 ]
 
