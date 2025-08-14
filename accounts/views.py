@@ -28,9 +28,9 @@ def register_view(request):
     if request.method == 'POST':
         form = UserRegistrationForm(request.POST)
         if form.is_valid():
-            # Create user
+            # Create user but don't activate yet
             user = form.save(commit=False)
-            user.is_active = True  # For now, activate immediately
+            user.is_active = False  # User must verify email first
             user.save()
             
             # Create profile (should be auto-created by signal, but let's ensure)
@@ -41,25 +41,14 @@ def register_view(request):
             profile.email_verification_token = verification_token
             profile.save()
             
-            # Send welcome email
-            send_welcome_email(user)
+            # Send verification email instead of welcome email
+            send_verification_email(user, request)
             
-            # Create welcome notification
-            Notification.create_notification(
-                recipient=user,
-                sender=None,
-                notification_type='welcome',
-                message=f"Welcome to SocialHub, {user.first_name or user.username}!"
+            messages.success(
+                request, 
+                f'Registration successful! Please check your email ({user.email}) to verify your account before logging in.'
             )
-            
-            # Log the user in
-            username = form.cleaned_data.get('username')
-            password = form.cleaned_data.get('password1')
-            user = authenticate(username=username, password=password)
-            login(request, user)
-            
-            messages.success(request, f'Welcome {user.first_name or user.username}! Your account has been created.')
-            return redirect('home')
+            return redirect('login')
     else:
         form = UserRegistrationForm()
     
@@ -76,6 +65,16 @@ def login_view(request):
         if form.is_valid():
             username = form.cleaned_data['username']
             password = form.cleaned_data['password']
+            
+            # Check if user exists first
+            try:
+                user_obj = User.objects.get(username=username)
+                if not user_obj.is_active:
+                    messages.error(request, 'Please verify your email address before logging in. Check your inbox for the verification link.')
+                    return render(request, 'accounts/login.html', {'form': form})
+            except User.DoesNotExist:
+                pass  # Will be handled by authenticate below
+            
             user = authenticate(request, username=username, password=password)
             
             if user is not None:
@@ -93,6 +92,62 @@ def login_view(request):
         form = UserLoginForm()
     
     return render(request, 'accounts/login.html', {'form': form})
+
+
+def verify_email(request, token):
+    """Verify user email with token"""
+    try:
+        profile = Profile.objects.get(email_verification_token=token)
+        user = profile.user
+        
+        if not user.is_active:
+            # Activate the user
+            user.is_active = True
+            user.save()
+            
+            # Clear the verification token
+            profile.email_verification_token = ''
+            profile.save()
+            
+            # Send welcome email now
+            send_welcome_email(user)
+            
+            # Create welcome notification
+            Notification.create_notification(
+                recipient=user,
+                sender=None,
+                notification_type='welcome',
+                message=f"Welcome to SocialHub, {user.first_name or user.username}!"
+            )
+            
+            messages.success(request, 'Email verified successfully! You can now log in to your account.')
+            return redirect('login')
+        else:
+            messages.info(request, 'Email is already verified. You can log in to your account.')
+            return redirect('login')
+            
+    except Profile.DoesNotExist:
+        messages.error(request, 'Invalid verification link. Please try registering again.')
+        return redirect('register')
+
+
+def resend_verification_email(request):
+    """Resend verification email"""
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        try:
+            user = User.objects.get(email=email, is_active=False)
+            if user.profile.email_verification_token:
+                send_verification_email(user, request)
+                messages.success(request, f'Verification email resent to {email}. Please check your inbox.')
+            else:
+                messages.info(request, 'Your email is already verified. You can log in.')
+        except User.DoesNotExist:
+            messages.error(request, 'No unverified account found with this email address.')
+        
+        return redirect('login')
+    
+    return render(request, 'accounts/resend_verification.html')
 
 
 def logout_view(request):
@@ -249,6 +304,48 @@ def send_welcome_email(user):
             recipient=user,
             email_type='welcome',
             subject='Welcome to SocialHub!',
+            is_sent=False,
+            error_message=str(e)
+        )
+
+
+def send_verification_email(user, request):
+    """Send email verification email to new user"""
+    try:
+        # Create verification URL
+        verification_url = request.build_absolute_uri(
+            reverse('verify_email', kwargs={'token': user.profile.email_verification_token})
+        )
+        
+        subject = 'Verify Your SocialHub Email Address'
+        message = render_to_string('accounts/emails/verification_email.html', {
+            'user': user,
+            'verification_url': verification_url,
+            'site_name': 'SocialHub'
+        })
+        
+        send_mail(
+            subject,
+            '',
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email],
+            html_message=message,
+            fail_silently=False,
+        )
+        
+        # Log email
+        EmailLog.objects.create(
+            recipient=user,
+            email_type='email_verification',
+            subject=subject,
+            is_sent=True
+        )
+    except Exception as e:
+        # Log failed email
+        EmailLog.objects.create(
+            recipient=user,
+            email_type='email_verification',
+            subject='Verify Your SocialHub Email Address',
             is_sent=False,
             error_message=str(e)
         )
